@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "acd4fd6b3d85aed1c09aa8fb604cdc35a1045caa512c3268beedf801fd1be1a9"
+            "sha256": "9b628b86a1d9045682edb1ae92ae77694cd6892bf9840c2949e18d48c79bab60"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -94,8 +94,16 @@
             "hashes": [
                 "sha256:0b1467b129e72df6581bad4b395282a69b4b4315b2ddd69b815b4a0a9eb5e29f"
             ],
-            "index": "pypi",
+            "path": "./pyracing",
             "version": "==0.1.1"
+        },
+        "python-dotenv": {
+            "hashes": [
+                "sha256:31d752f5b748f4e292448c9a0cac6a08ed5e6f4cefab85044462dcad56905cec",
+                "sha256:9fa413c37d4652d3fa02fea0ff465c384f5db75eab259c4fc5d0c5b8bf20edd4"
+            ],
+            "index": "pypi",
+            "version": "==0.16.0"
         },
         "rfc3986": {
             "hashes": [
