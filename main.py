@@ -4,13 +4,13 @@ from pyracing.response_objects import session_data, career_stats, historical_dat
 import os
 import asyncio
 import dotenv
+import csv
+from datetime import datetime
 
 
 CLUB_ID = 45
-SEASON_IDS = [649, 228, 386, 447] # series for testing
 QUARTER = 2
 RACE_WEEK = 2
-
 dotenv.load_dotenv()
 
 
@@ -21,30 +21,53 @@ async def main():
   road_results_list = await road_results(client, driver_ids)
   oval_results_list = await oval_results(client, driver_ids)
 
-  # TODO use the results lists to find the top of the week
+  top_10_road = top_n_from_results(10, road_results_list)
+  top_10_oval = top_n_from_results(10, oval_results_list)
+
+  now = datetime.now()
+  build_csv(f'top_road_{now}.csv', top_10_road)
+  build_csv(f'top_oval_{now}.csv', top_10_oval)
 
 
-async def road_results(client: pyracing, cust_ids: list[int]) -> dict[int, list[session_data.SubSessionData]]:
+def build_csv(file_name: str, event_result_list: list[historical_data.EventResults]):
+  with open(file_name, mode='w') as road_file:
+    road_writer = csv.writer(road_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    road_writer.writerow(['Name', 'Start Date', 'Champ Points', 'Club Points',
+                          'Start Position', 'Finish Position', 'SoF'])
+
+    for event_result in event_result_list:
+      road_writer.writerow([event_result.display_name, event_result.date_start,
+                            event_result.points_champ, event_result.points_club,
+                            event_result.pos_start, event_result.pos_finish,
+                            event_result.strength_of_field])
+
+
+def top_n_from_results(n: int, results: list[historical_data.EventResults]) -> list[historical_data.EventResults]:
+  results.sort(key=lambda result: result.points_champ, reverse=True)
+  return results[0:n]
+
+
+async def road_results(client: pyracing, cust_ids: list[int]) -> list[historical_data.EventResults]:
   return await weekly_results(client, cust_ids, ct.Category.road)
 
 
-async def oval_results(client: pyracing, cust_ids: list[int]) -> dict[int, list[session_data.SubSessionData]]:
+async def oval_results(client: pyracing, cust_ids: list[int]) -> list[historical_data.EventResults]:
   return await weekly_results(client, cust_ids, ct.Category.oval)
 
 
-async def weekly_results(client: pyracing, cust_ids: list[int], category: ct.Category) -> dict[int, list[session_data.SubSessionData]]:
-  """Returns dict of key: cust_id, value: list of subsession data objects.
+async def weekly_results(client: pyracing, cust_ids: list[int], category: ct.Category) -> list[historical_data.EventResults]:
+  """Returns dict of key: cust_id, value: list of event results objects.
   This data is for all of this cust_ids races in that race week unless it goes over the max limit"""
-  subsession_results = {}
+  all_results = []
   for cust_id in cust_ids:
     # All race results for given race week for this user
     race_results = await results_from_cust_id(client, cust_id, category.value)
-    for race in race_results:
-      data = await client.subsession_data(race.subsession_id)
-      add_or_append(subsession_results, cust_id, data)
+    print(f'Got {category.name} results for {cust_id}')
+    all_results.extend(race_results)
+    # data = await client.subsession_data(race.subsession_id)
 
   print(f'Gathered all results for all drivers for category: {category.name}')
-  return subsession_results
+  return all_results
 
 
 async def results_from_cust_id(client: pyracing, cust_id: int, category: ct.Category) -> list[historical_data.EventResults]:
@@ -60,28 +83,33 @@ async def results_from_cust_id(client: pyracing, cust_id: int, category: ct.Cate
 
 
 async def drivers_from_club(client: pyracing) -> list[int]:
+  """Get as many unique driver ids as we can from a club.
+  We will likely only see the top few since its sorted by most champ pts"""
   driver_ids = []
-  for season_id in SEASON_IDS:
-    standings = await client.season_standings(
-        season_id,
-        club_id=CLUB_ID,
-        race_week=-1,
-        result_num_high=-1
-    )
+  for season in await all_seasons(client):
+    try:
+      standings = await client.season_standings(
+          season.season_id,
+          club_id=CLUB_ID,
+          race_week=-1,
+          result_num_high=100
+      )
+    except:
+      print(f'No drivers found for series: {season.series_name_short}')
+      continue
+
+    print(f'Found {len(standings)} drivers from club in series: {season.series_name_short}')
+
     for standing in standings:
       driver_ids.append(standing.cust_id)
 
-  print('Gathered all drivers from club')
+  print(f'Gathered {len(driver_ids)} total drivers from club')
   # Remove duplicates
   return list(set(driver_ids))
 
 
-def add_or_append(dict: dict, key: any, item: any) -> None:
-  """Add list to value of dict[key] or create it as list if it doesn't exist"""
-  if key in dict:
-    dict[key] = dict[key].append(item)
-  else:
-    dict[key] = [item]
+async def all_seasons(client: pyracing) -> list[iracing_data.Season]:
+  return await client.current_seasons()
 
 
 async def login() -> pyracing:
