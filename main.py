@@ -8,10 +8,21 @@ import csv
 from datetime import datetime
 from timeit import default_timer as timer
 
-
+ # 45 is club ID for brazil
 CLUB_ID = 45
+
+# Quarter refers to the quarter of the season you want to search.
+# If you want the season that starts in January, use 1
 QUARTER = 2
+
+# This is the race week inside the season you want to search for.
+# This is 0 index, so the first race week is 0, 2nd race week is 1, etc
 RACE_WEEK = 2
+
+# Change this to change the amount of results that are output into the CSV
+# By default this gives top 10 for road and oval
+TOP_N_RESULTS = 10
+
 dotenv.load_dotenv()
 
 
@@ -23,8 +34,8 @@ async def main():
   road_results_list = await road_results(client, driver_ids)
   oval_results_list = await oval_results(client, driver_ids)
 
-  top_10_road = top_n_from_results(10, road_results_list)
-  top_10_oval = top_n_from_results(10, oval_results_list)
+  top_10_road = top_n_from_results(TOP_N_RESULTS, road_results_list)
+  top_10_oval = top_n_from_results(TOP_N_RESULTS, oval_results_list)
 
   now = datetime.now()
   build_csv(f'top_road_{now}.csv', top_10_road)
