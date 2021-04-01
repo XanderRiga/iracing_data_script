@@ -6,6 +6,7 @@ import asyncio
 import dotenv
 import csv
 from datetime import datetime
+from timeit import default_timer as timer
 
 
 CLUB_ID = 45
@@ -15,6 +16,7 @@ dotenv.load_dotenv()
 
 
 async def main():
+  start = timer()
   client = await login()
 
   driver_ids = await drivers_from_club(client)
@@ -27,7 +29,8 @@ async def main():
   now = datetime.now()
   build_csv(f'top_road_{now}.csv', top_10_road)
   build_csv(f'top_oval_{now}.csv', top_10_oval)
-
+  end = timer()
+  print(f'Finished! Script took {end - start} seconds to complete')
 
 def build_csv(file_name: str, event_result_list: list[historical_data.EventResults]):
   with open(file_name, mode='w') as road_file:
