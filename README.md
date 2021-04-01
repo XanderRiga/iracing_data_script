@@ -13,6 +13,9 @@ as the amount of results(e.g. top 20 instead of top 10)
 - From inside the repo, run `pipenv install` to install dependencies
 - From inside the repo, clone pyracing: https://github.com/Esterni/pyracing
 - Navigate into the `pyracing` directory and run `pip install .`
+- Create a .env file, run `touch .env` from the root of the repo
+- inside the new file called `.env` add `IRACING_USERNAME=MY USERNAME` and `IRACING_PASSWORD=MY PASSWORD` as lines
+  * **NOTE** This will not work if your username and password are not correct
 - Make sure your computer won't go to sleep if left alone for a while(because this takes a _while)_
 - From the root of the repo, run `python main.py`
 - Enjoy!
