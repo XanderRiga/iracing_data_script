@@ -85,15 +85,18 @@ async def weekly_results(client, cust_ids, category):
 
 
 async def results_from_cust_id(client, cust_id, category):
-  return await client.event_results(
-    cust_id,
-    QUARTER,
-    result_num_high=100,
-    race_week=RACE_WEEK,
-    category=category,
-    sort=ct.Sort.champ_points.value,
-    order=ct.Sort.descending.value
-  )
+  try:
+    return await client.event_results(
+      cust_id,
+      QUARTER,
+      result_num_high=100,
+      race_week=RACE_WEEK,
+      category=category,
+      sort=ct.Sort.champ_points.value,
+      order=ct.Sort.descending.value
+    )
+  except:
+    return []
 
 
 async def drivers_from_club(client):
