@@ -32,7 +32,7 @@ async def main():
   end = timer()
   print(f'Finished! Script took {end - start} seconds to complete')
 
-def build_csv(file_name: str, event_result_list: list[historical_data.EventResults]):
+def build_csv(file_name, event_result_list):
   with open(file_name, mode='w') as road_file:
     road_writer = csv.writer(road_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
     road_writer.writerow(['Name', 'Start Date', 'Champ Points', 'Club Points',
@@ -45,20 +45,20 @@ def build_csv(file_name: str, event_result_list: list[historical_data.EventResul
                             event_result.strength_of_field])
 
 
-def top_n_from_results(n: int, results: list[historical_data.EventResults]) -> list[historical_data.EventResults]:
+def top_n_from_results(n, results):
   results.sort(key=lambda result: result.points_champ, reverse=True)
   return results[0:n]
 
 
-async def road_results(client: pyracing, cust_ids: list[int]) -> list[historical_data.EventResults]:
+async def road_results(client, cust_ids):
   return await weekly_results(client, cust_ids, ct.Category.road)
 
 
-async def oval_results(client: pyracing, cust_ids: list[int]) -> list[historical_data.EventResults]:
+async def oval_results(client, cust_ids):
   return await weekly_results(client, cust_ids, ct.Category.oval)
 
 
-async def weekly_results(client: pyracing, cust_ids: list[int], category: ct.Category) -> list[historical_data.EventResults]:
+async def weekly_results(client, cust_ids, category):
   """Returns dict of key: cust_id, value: list of event results objects.
   This data is for all of this cust_ids races in that race week unless it goes over the max limit"""
   all_results = []
@@ -73,7 +73,7 @@ async def weekly_results(client: pyracing, cust_ids: list[int], category: ct.Cat
   return all_results
 
 
-async def results_from_cust_id(client: pyracing, cust_id: int, category: ct.Category) -> list[historical_data.EventResults]:
+async def results_from_cust_id(client, cust_id, category):
   return await client.event_results(
     cust_id,
     QUARTER,
@@ -85,7 +85,7 @@ async def results_from_cust_id(client: pyracing, cust_id: int, category: ct.Cate
   )
 
 
-async def drivers_from_club(client: pyracing) -> list[int]:
+async def drivers_from_club(client):
   """Get as many unique driver ids as we can from a club.
   We will likely only see the top few since its sorted by most champ pts"""
   driver_ids = []
@@ -111,11 +111,11 @@ async def drivers_from_club(client: pyracing) -> list[int]:
   return list(set(driver_ids))
 
 
-async def all_seasons(client: pyracing) -> list[iracing_data.Season]:
+async def all_seasons(client):
   return await client.current_seasons()
 
 
-async def login() -> pyracing:
+async def login():
   client = pyracing.Client(
     os.getenv("IRACING_USERNAME"),
     os.getenv("IRACING_PASSWORD")
