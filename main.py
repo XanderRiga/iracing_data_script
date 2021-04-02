@@ -31,26 +31,28 @@ async def main():
   client = await login()
 
   driver_ids = await drivers_from_club(client)
+
   road_results_list = await road_results(client, driver_ids)
-  oval_results_list = await oval_results(client, driver_ids)
-
   top_10_road = top_n_from_results(TOP_N_RESULTS, road_results_list)
-  top_10_oval = top_n_from_results(TOP_N_RESULTS, oval_results_list)
+  road_complete_time = datetime.now()
+  build_csv(f'top_road_{road_complete_time}.csv', top_10_road)
 
-  now = datetime.now()
-  build_csv(f'top_road_{now}.csv', top_10_road)
-  build_csv(f'top_oval_{now}.csv', top_10_oval)
+  oval_results_list = await oval_results(client, driver_ids)
+  top_10_oval = top_n_from_results(TOP_N_RESULTS, oval_results_list)
+  oval_complete_time = datetime.now()
+  build_csv(f'top_oval_{oval_complete_time}.csv', top_10_oval)
+
   end = timer()
   print(f'Finished! Script took {end - start} seconds to complete')
 
 def build_csv(file_name, event_result_list):
-  with open(file_name, mode='w') as road_file:
-    road_writer = csv.writer(road_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-    road_writer.writerow(['Name', 'Start Date', 'Champ Points', 'Club Points',
+  with open(file_name, mode='w') as file:
+    writer = csv.writer(file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    writer.writerow(['Name', 'Start Date', 'Champ Points', 'Club Points',
                           'Start Position', 'Finish Position', 'SoF'])
 
     for event_result in event_result_list:
-      road_writer.writerow([event_result.display_name, event_result.date_start,
+      writer.writerow([event_result.display_name, event_result.date_start,
                             event_result.points_champ, event_result.points_club,
                             event_result.pos_start, event_result.pos_finish,
                             event_result.strength_of_field])
