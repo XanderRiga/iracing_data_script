@@ -33,34 +33,62 @@ async def main():
   driver_ids = await drivers_from_club(client)
 
   road_results_list = await road_results(client, driver_ids)
-  top_10_road = top_n_from_results(TOP_N_RESULTS, road_results_list)
+  top_n_road = top_n_from_results(TOP_N_RESULTS, road_results_list)
+  road_subsession_results = await event_results_to_subsession_results(client, top_n_road)
   road_complete_time = datetime.now()
-  build_csv(f'top_road_{road_complete_time}.csv', top_10_road)
+  build_csv(f'top_road_{road_complete_time}.csv', road_subsession_results)
 
   oval_results_list = await oval_results(client, driver_ids)
-  top_10_oval = top_n_from_results(TOP_N_RESULTS, oval_results_list)
+  top_n_oval = top_n_from_results(TOP_N_RESULTS, oval_results_list)
+  oval_subsession_results = await event_results_to_subsession_results(client, top_n_oval)
   oval_complete_time = datetime.now()
-  build_csv(f'top_oval_{oval_complete_time}.csv', top_10_oval)
+  build_csv(f'top_oval_{oval_complete_time}.csv', oval_subsession_results)
 
   end = timer()
   print(f'Finished! Script took {end - start} seconds to complete')
 
-def build_csv(file_name, event_result_list):
+
+def build_csv(file_name, subsession_result_list):
   with open(file_name, mode='w') as file:
     writer = csv.writer(file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
     writer.writerow(['Name', 'Start Date', 'Champ Points', 'Club Points',
-                          'Start Position', 'Finish Position', 'SoF'])
+                          'Start Position', 'Finish Position', 'SoF', 'Series', 'iRating Gain'])
 
-    for event_result in event_result_list:
-      writer.writerow([event_result.display_name, event_result.date_start,
-                            event_result.points_champ, event_result.points_club,
-                            event_result.pos_start, event_result.pos_finish,
-                            event_result.strength_of_field])
+    for subsession_result in subsession_result_list:
+      writer.writerow([subsession_result.event_result.display_name,
+                       subsession_result.event_result.date_start,
+                       subsession_result.event_result.points_champ,
+                       subsession_result.event_result.points_club,
+                       subsession_result.event_result.pos_start,
+                       subsession_result.event_result.pos_finish,
+                       subsession_result.event_result.strength_of_field,
+                       subsession_result.series_name,
+                       subsession_result.irating_gain])
 
 
 def top_n_from_results(n, results):
   results.sort(key=lambda result: result.points_champ, reverse=True)
   return results[0:n]
+
+
+async def event_results_to_subsession_results(client, event_results):
+  """This takes a list of event results, and returns a list of Results containing extra subsession data"""
+  results = []
+  for event_result in event_results:
+    try:
+      subsession_data = await client.subsession_data(event_result.subsession_id)
+
+      driver = driver_from_subsession_by_cust_id(subsession_data, event_result.cust_id)
+      if driver:
+        irating = driver.irating_new - driver.irating_old
+      else:
+        irating = None
+
+      results.append(SubsessionResult(event_result, subsession_data.series_name_short, irating))
+    except:
+      results.append(SubsessionResult(event_result, None, None))
+
+  return results
 
 
 async def road_results(client, cust_ids):
@@ -80,7 +108,6 @@ async def weekly_results(client, cust_ids, category):
     race_results = await results_from_cust_id(client, cust_id, category.value)
     print(f'Got {category.name} results for {cust_id}')
     all_results.extend(race_results)
-    # data = await client.subsession_data(race.subsession_id)
 
   print(f'Gathered all results for all drivers for category: {category.name}')
   return all_results
@@ -131,12 +158,27 @@ async def all_seasons(client):
   return await client.current_seasons()
 
 
+def driver_from_subsession_by_cust_id(subsession_data, cust_id):
+  for driver in subsession_data.drivers:
+    if driver.cust_id == cust_id:
+      return driver
+
+  return None
+
+
 async def login():
   client = pyracing.Client(
     os.getenv("IRACING_USERNAME"),
     os.getenv("IRACING_PASSWORD")
   )
   return client
+
+
+class SubsessionResult:
+  def __init__(self, event_result, series_name, irating_gain):
+    self.event_result = event_result
+    self.series_name = series_name
+    self.irating_gain = irating_gain
 
 
 asyncio.run(main())
