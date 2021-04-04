@@ -36,7 +36,8 @@ async def main():
   top_n_road = top_n_from_results(TOP_N_RESULTS, road_results_list)
   road_subsession_results = await event_results_to_subsession_results(client, top_n_road)
   road_complete_time = datetime.now()
-  road_csv_name = f'top_road_{road_complete_time}.csv'
+  road_complete_time_string = road_complete_time.strftime("%m-%d-%Y, %H-%M-%S")
+  road_csv_name = f'top_road_{road_complete_time_string}.csv'
   build_csv(road_csv_name, road_subsession_results)
   print(f'Road CSV Built at: {road_csv_name}')
 
@@ -44,7 +45,8 @@ async def main():
   top_n_oval = top_n_from_results(TOP_N_RESULTS, oval_results_list)
   oval_subsession_results = await event_results_to_subsession_results(client, top_n_oval)
   oval_complete_time = datetime.now()
-  oval_csv_name = f'top_oval_{oval_complete_time}.csv'
+  oval_complete_time_string = oval_complete_time.strftime("%m-%d-%Y, %H-%M-%S")
+  oval_csv_name = f'top_oval_{oval_complete_time_string}.csv'
   build_csv(oval_csv_name, oval_subsession_results)
   print(f'Oval CSV Built at: {oval_csv_name}')
 
